@@ -56,16 +56,6 @@ VALUES( 'MLOC00112',
 INSERT INTO IBank_Device (IBank_Device_ID , IBank_Device_Type)
 VALUES( 'IBNK000210', 'Desktop');
 
-CREATE TABLE IBank_Trx_Location (
-	IBank_IP_Address VARCHAR(50) NOT NULL PRIMARY KEY,
-	IBank_Device_ID VARCHAR (50) NOT NULL REFERENCES IBank_Device (IBank_Device_ID),
-	IBank_Inet_Location VARCHAR (50),
-	IBank_IP_Address_Range1 VARCHAR (50),
-	IBank_IP_Address_Range2 VARCHAR (50),
-	IBank_Inet_Provider VARCHAR (25),
-	IBank_Inet_Latitude NUMERIC,
-	IBank_Inet_Longitude NUMERIC
-);
 
 INSERT INTO IBank_Trx_Location (IBank_IP_Address ,
 								IBank_Device_ID,
