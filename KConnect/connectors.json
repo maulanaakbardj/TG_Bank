@@ -1,13 +1,85 @@
 {
-  "name": "dsuc-atm_machine-connector",
-  "config": {
-    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
-    "database.hostname": "postgres",
-    "database.port": "5432",
-    "database.user": "postgres",
-    "database.password": "postgres",
-    "database.dbname" : "dsuc",
-    "database.server.name": "dbserver1",
-    "table.include.list": "public.atm_machine"
-  }
-}      
+  "name": "IBank_Trx_Location-connect",
+  "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
+  "connection.url": "jdbc:mariadb://mariadb:3306/dsuc",
+  "connection.user": "root",
+  "connection.password": "********",
+  "table.whitelist": "IBank_Trx_Location",
+  "mode": "timestamp",
+  "incrementing.column.name": "",
+  "timestamp.column.name": "updated_at",
+  "topic.prefix": "t-"
+}
+
+{
+  "name": " Mobile_Trx_Location-connect",
+  "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
+  "connection.url": "jdbc:mariadb://mariadb:3306/dsuc",
+  "connection.user": "root",
+  "connection.password": "********",
+  "table.whitelist": "Mobile_Trx_Location",
+  "mode": "timestamp",
+  "timestamp.column.name": "updated_at",
+  "topic.prefix": "t-"
+}
+
+{
+  "name": "Mobile_Device-connect",
+  "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
+  "connection.url": "jdbc:mariadb://mariadb:3306/dsuc",
+  "connection.user": "root",
+  "connection.password": "********",
+  "table.whitelist": "Mobile_Device",
+  "mode": "timestamp",
+  "timestamp.column.name": "updated_at",
+  "topic.prefix": "t-"
+}
+
+{
+  "name": "Transactional_Data-Connect",
+  "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
+  "transforms": "TimestampConverter, TimestampConverter2, TimestampConverter3",
+  "connection.url": "jdbc:mariadb://mariadb:3306/dsuc",
+  "connection.user": "root",
+  "connection.password": "********",
+  "table.whitelist": "Transactional_Data",
+  "mode": "bulk",
+  "timestamp.column.name": "",
+  "topic.prefix": "t-"
+}
+
+{
+  "name": "atm-connnect",
+  "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
+  "connection.url": "jdbc:mariadb://mariadb:3306/dsuc",
+  "connection.user": "root",
+  "connection.password": "********",
+  "table.whitelist": "ATM_Machine",
+  "mode": "timestamp",
+  "timestamp.column.name": "updated_at",
+  "topic.prefix": "t-"
+}
+
+{
+  "name": "IBank_Device-connect",
+  "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
+  "connection.url": "jdbc:mariadb://mariadb:3306/dsuc",
+  "connection.user": "root",
+  "connection.password": "********",
+  "table.whitelist": "IBank_Device",
+  "mode": "timestamp",
+  "timestamp.column.name": "updated_at",
+  "topic.prefix": "t-"
+}
+
+{
+  "name": "Mobile_Telco-connnect",
+  "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
+  "connection.url": "jdbc:mariadb://mariadb:3306/dsuc",
+  "connection.user": "root",
+  "connection.password": "********",
+  "table.whitelist": "Mobile_Telco",
+  "mode": "timestamp",
+  "timestamp.column.name": "updated_at",
+  "topic.prefix": "t-"
+}
