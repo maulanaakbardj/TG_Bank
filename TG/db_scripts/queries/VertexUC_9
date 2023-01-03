@@ -1,0 +1,5 @@
+CREATE QUERY VertexUC_9(/* Parameters here */) FOR GRAPH Graph_Practice_New { 
+  /* Write query logic here */ 
+  myUC9= {V_Suspect_UC9.*};
+  PRINT myUC9; 
+}
