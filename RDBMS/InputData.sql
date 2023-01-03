@@ -10,7 +10,8 @@ INSERT INTO ATM_Machine (ATM_Machine_ID ,
 								ATM_Longitude,
 								ATM_City,
 								ATM_Area,
-								ATM_Address)
+								ATM_Address,
+								updated_at)
 VALUES( 'ATM001212',
 		'HP',
 		'BSI',
@@ -23,38 +24,43 @@ VALUES( 'ATM001212',
 		117.480045,
 		'Bontang',
 		'Kalimantan Timur',
-		null);
+		null,
+		CURRENT_TIMESTAMP());
 	
-INSERT INTO Mobile_Telco (Mobile_Telco_ID , Mobile_Telco_Name)
-VALUES( 'MTEL001210', 'Telkomsel');
+INSERT INTO Mobile_Telco (Mobile_Telco_ID , Mobile_Telco_Name, updated_at)
+VALUES( 'MTEL001210', 'Telkomsel',CURRENT_TIMESTAMP());
 
 INSERT INTO Mobile_Device (Mobile_Device_ID ,
 						   Mobile_Telco_ID,
 						   Mobile_Device_Brand,
 						   Mobile_Device_OS_Type,
-						   Mobile_Device_OS_Version)
+						   Mobile_Device_OS_Version,
+						   updated_at)
 VALUES( 'MD00010922',
 		'MTEL001210',
 		'Samsung',
 		'Android',
-		'10');
+		'10',
+		CURRENT_TIMESTAMP());
 
 INSERT INTO Mobile_Trx_Location (Mobile_Trx_Location_ID ,
 								 Mobile_Device_ID,
 								 Mobile_GPS_Latitude,
 								 Mobile_GPS_Longitude,
 								 Mobile_GPS_City,
-								 Mobile_GPS_Area)
+								 Mobile_GPS_Area,
+								 updated_at)
 VALUES( 'MLOC00112',
 		'MD00010922',
 		4.143695,
 		96.128115,
 		'Meulaboh',
-		'Aceh');
+		'Aceh',
+		CURRENT_TIMESTAMP());
 	
 	
-INSERT INTO IBank_Device (IBank_Device_ID , IBank_Device_Type)
-VALUES( 'IBNK000210', 'Desktop');
+INSERT INTO IBank_Device (IBank_Device_ID , IBank_Device_Type, updated_at)
+VALUES( 'IBNK000210', 'Desktop', CURRENT_TIMESTAMP());
 
 
 INSERT INTO IBank_Trx_Location (IBank_IP_Address ,
@@ -64,7 +70,8 @@ INSERT INTO IBank_Trx_Location (IBank_IP_Address ,
 								IBank_IP_Address_Range2,
 								IBank_Inet_Provider,
 								IBank_Inet_Latitude,
-								IBank_Inet_Longitude)
+								IBank_Inet_Longitude,
+								updated_at)
 VALUES( '173.12.11.333',
 		'IBNK000210',
 		'172.32.0.0-191.255.255.255',
@@ -72,7 +79,8 @@ VALUES( '173.12.11.333',
 		'Biznet',
 		'Kupang',
 		-10.1771997,
-		123.6070329);
+		123.6070329,
+		CURRENT_TIMESTAMP());
 	
 INSERT INTO Transactional_Data (Account_Debit_BSI_ID,
 								 ATM_Card_ID,
@@ -98,7 +106,8 @@ INSERT INTO Transactional_Data (Account_Debit_BSI_ID,
 								 IBank_Trx_Type,
 								 IBank_Trx_Amount,
 								 IBank_Trx_Datetime,
-								 Account_Debit_BSI_ID_IBank_Receiver)
+								 Account_Debit_BSI_ID_IBank_Receiver,
+								 updated_at)
 VALUES( 'DCA991921',
 		'10000009999',
 		'ATM001212',
@@ -123,4 +132,5 @@ VALUES( 'DCA991921',
 		'within Same Bank',
 		5000000,
 		'2022-11-10 16:01:00',
-		null);
+		null,
+		CURRENT_TIMESTAMP());
