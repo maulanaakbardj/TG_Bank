@@ -1,0 +1,11 @@
+Mobile_Telco_ID,Mobile_Device_ID,Mobile_Device_Brand,Mobile_Device_OS_Type,Mobile_Device_OS_Version
+MTEL001210,MD00010922,Samsung,Android,10
+MTEL001311,MD00011029,Samsung,Android,11
+MTEL001412,MD00011136,Samsung,Android,12
+MTEL001513,MD00011243,Samsung,Android,8
+MTEL001614,MD00011350,Samsung,Android,9
+MTEL001715,MD00011457,Samsung,Android,10
+MTEL001816,MD00011564,Samsung,Android,11
+MTEL001917,MD00011671,Samsung,Android,12
+MTEL002018,MD00011778,Samsung,Android,13
+MTEL002119,MD00011885,Samsung,Android,14
