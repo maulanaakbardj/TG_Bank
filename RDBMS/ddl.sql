@@ -11,19 +11,22 @@ CREATE TABLE ATM_Machine (
 	ATM_Longitude FLOAT,
 	ATM_City VARCHAR (50),
 	ATM_Area VARCHAR (50),
-	ATM_Address VARCHAR (200)
+	ATM_Address VARCHAR (200),
+	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE Mobile_Telco (
 	Mobile_Telco_ID VARCHAR(50) NOT NULL PRIMARY KEY,
-	Mobile_Telco_Name VARCHAR (25));
+	Mobile_Telco_Name VARCHAR (25),
+	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP);
 
 CREATE TABLE Mobile_Device (
 	Mobile_Device_ID VARCHAR(50) NOT NULL PRIMARY KEY,
 	Mobile_Telco_ID VARCHAR (50) NOT NULL REFERENCES Mobile_Telco (Mobile_Telco_ID),
 	Mobile_Device_Brand VARCHAR (50),
 	Mobile_Device_OS_Type VARCHAR (20),
-	Mobile_Device_OS_Version VARCHAR (5)
+	Mobile_Device_OS_Version VARCHAR (5),
+	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE Mobile_Trx_Location (
@@ -32,12 +35,14 @@ CREATE TABLE Mobile_Trx_Location (
 	Mobile_GPS_Latitude FLOAT,
 	Mobile_GPS_Longitude FLOAT,
 	Mobile_GPS_City VARCHAR (50),
-	Mobile_GPS_Area VARCHAR (50)
+	Mobile_GPS_Area VARCHAR (50),
+	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IBank_Device (
 	IBank_Device_ID VARCHAR(50) NOT NULL PRIMARY KEY,
-	IBank_Device_Type VARCHAR (20)
+	IBank_Device_Type VARCHAR (20),
+	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IBank_Trx_Location (
@@ -48,7 +53,8 @@ CREATE TABLE IBank_Trx_Location (
 	IBank_IP_Address_Range2 VARCHAR (50),
 	IBank_Inet_Provider VARCHAR (25),
 	IBank_Inet_Latitude FLOAT,
-	IBank_Inet_Longitude FLOAT
+	IBank_Inet_Longitude FLOAT,
+	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 
@@ -77,5 +83,6 @@ CREATE TABLE Transactional_Data (
 	IBank_Trx_Type VARCHAR (100),
 	IBank_Trx_Amount INT,
 	IBank_Trx_Datetime TIMESTAMP NOT NULL,
-	Account_Debit_BSI_ID_IBank_Receiver VARCHAR(50)
+	Account_Debit_BSI_ID_IBank_Receiver VARCHAR(50),
+	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
