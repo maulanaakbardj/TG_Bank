@@ -1,0 +1,52 @@
+USE GRAPH Graph_Practice_New
+
+DROP DATA_SOURCE loader
+CREATE DATA_SOURCE KAFKA loader  = "/home/tigergraph/graph-data/kafka.config" FOR GRAPH Graph_Practice_New
+
+DROP JOB kafka_dsuc
+CREATE LOADING JOB kafka_dsuc FOR GRAPH Graph_Practice_New {
+      DEFINE FILENAME Data_ATM = "$loader :/home/tigergraph/graph-data/atm.config";
+      DEFINE FILENAME Data_IBank_Device = "$loader :/home/tigergraph/graph-data/IBank_Device.config";
+      DEFINE FILENAME Data_IBank_Trx_Location = "$loader :/home/tigergraph/graph-data/IBank_Trx_Location.config";
+      DEFINE FILENAME Data_Mobile_Device = "$loader :/home/tigergraph/graph-data/Mobile_Device.config";
+      DEFINE FILENAME Data_Mobile_Telco = "$loader :/home/tigergraph/graph-data/Mobile_Telco.config";
+      DEFINE FILENAME Data_Mobile_Trx_Location = "$loader :/home/tigergraph/graph-data/Mobile_Trx_Location.config";
+      DEFINE FILENAME Data_Transactional_Data = "$loader :/home/tigergraph/graph-data/Transactional_Data.config";
+
+      LOAD Data_ATM TO VERTEX V_ATM_Machine VALUES( $"payload":"ATM_Machine_ID", $"payload":"ATM_Brand", $"payload":"ATM_Type", $"payload":"ATM_Operation_Code", $"payload":"ATM_Operation_Time", $"payload":"ATM_Operation_Time_Start", $"payload":"ATM_Operation_Time_End", $"payload":"ATM_Name", $"payload":"ATM_Latitude", $"payload":"ATM_Longitude", $"payload":"ATM_City", $"payload":"ATM_Area", $"payload":"ATM_Address") USING JSON_FILE="true";
+      
+      LOAD Data_Mobile_Telco TO VERTEX V_Mobile_Telco VALUES($"payload":"Mobile_Telco_ID", $"payload":"Mobile_Telco_Name") USING JSON_FILE="true";
+
+      LOAD Data_IBank_Device TO VERTEX V_IBank_Device VALUES($"payload":"IBank_Device_ID", $"payload":"IBank_Device_Type") USING JSON_FILE="true";
+      
+      LOAD Data_Mobile_Trx_Location TO VERTEX V_Mobile_Trx_Location VALUES($"payload":"Mobile_Trx_Location_ID", $"payload":"Mobile_GPS_Latitude", $"payload":"Mobile_GPS_Longitude", $"payload":"Mobile_GPS_City",$"payload":"Mobile_GPS_Area") USING JSON_FILE="true";
+      LOAD Data_Mobile_Trx_Location TO EDGE E_Located_Mobile VALUES( $"payload":"Mobile_Trx_Location_ID",$"payload":"Mobile_Device_ID") USING JSON_FILE="true";
+      
+      LOAD Data_Mobile_Device TO VERTEX V_Mobile_Device VALUES($"payload":"Mobile_Device_ID", $"payload":"Mobile_Device_Brand", $"payload":"Mobile_Device_OS_Type", $"payload":"Mobile_Device_OS_Version") USING JSON_FILE="true";
+      LOAD Data_Mobile_Device TO EDGE E_Use_Mobile_Telco VALUES($"payload":"Mobile_Device_ID", $"payload":"Mobile_Telco_ID") USING JSON_FILE="true";
+
+      LOAD Data_IBank_Trx_Location  TO VERTEX V_IBank_Trx_Location VALUES($"payload":"IBank_IP_Address", $"payload":"IBank_Inet_Location", $"payload":"IBank_IP_Address_Range1", $"payload":"IBank_IP_Address_Range2", $"payload":"IBank_Inet_Provider", $"payload":"IBank_Inet_Latitude", $"payload":"IBank_Inet_Longitude") USING JSON_FILE="true";
+      LOAD Data_IBank_Trx_Location  TO EDGE E_Use_Device VALUES($"payload":"IBank_IP_Address", $"payload":"IBank_Device_ID") USING JSON_FILE="true";
+
+      LOAD Data_Transactional_Data TO VERTEX V_ATM_Trx VALUES($"payload":"ATM_Trx_ID", $"payload":"ATM_Trx_Code", $"payload":"ATM_Trx_Type", $"payload":"ATM_Trx_Amount", $"payload":"ATM_Trx_Datetime") USING JSON_FILE="true";
+      LOAD Data_Transactional_Data TO VERTEX V_Mobile_App_Trx VALUES($"payload":"Mobile_App_Trx_ID", $"payload":"Mobile_App_Trx_Code", $"payload":"Mobile_App_Trx_Type", $"payload":"Mobile_App_Trx_Amount", $"payload":"Mobile_App_Trx_Datetime") USING JSON_FILE="true";
+      LOAD Data_Transactional_Data TO VERTEX V_IBank_Trx VALUES($"payload":"IBank_Trx_ID", $"payload":"IBank_Trx_Code", $"payload":"IBank_Trx_Type", $"payload":"IBank_Trx_Amount", $"payload":"IBank_Trx_Datetime") USING JSON_FILE="true";
+      LOAD Data_Transactional_Data TO VERTEX V_Account_Debit_BSI VALUES($"payload":"Account_Debit_BSI_ID") USING JSON_FILE="true";
+      LOAD Data_Transactional_Data TO VERTEX V_Account_Debit_BSI VALUES($"payload":"Account_Debit_BSI_ID_ATM_Receiver") USING JSON_FILE="true";
+      LOAD Data_Transactional_Data TO VERTEX V_Account_Debit_BSI VALUES($"payload":"Account_Debit_BSI_ID_Mobile_Receiver") USING JSON_FILE="true";
+      LOAD Data_Transactional_Data TO VERTEX V_Account_Debit_BSI VALUES($"payload":"Account_Debit_BSI_ID_IBank_Receiver") USING JSON_FILE="true";
+      LOAD Data_Transactional_Data TO EDGE E_ATM_Send VALUES($"payload":"Account_Debit_BSI_ID", $"payload":"ATM_Trx_ID") USING JSON_FILE="true";
+      LOAD Data_Transactional_Data TO EDGE E_Use_Machine VALUES($"payload":"ATM_Trx_ID", $"payload":"ATM_Machine_ID") USING JSON_FILE="true";
+      LOAD Data_Transactional_Data TO EDGE E_Use_ATM_Card VALUES($"payload":"ATM_Trx_ID", $"payload":"ATM_Card_ID") USING JSON_FILE="true";
+      LOAD Data_Transactional_Data TO EDGE E_Owns_ATM_Card VALUES($"payload":"Account_Debit_BSI_ID", $"payload":"ATM_Card_ID") USING JSON_FILE="true";
+      LOAD Data_Transactional_Data TO EDGE E_Mobile_Send VALUES($"payload":"Account_Debit_BSI_ID", $"payload":"Mobile_App_Trx_ID") USING JSON_FILE="true";
+      LOAD Data_Transactional_Data TO EDGE E_Mobile_Trx_Loc VALUES($"payload":"Mobile_App_Trx_ID", $"payload":"Mobile_Location_ID") USING JSON_FILE="true";
+      LOAD Data_Transactional_Data TO EDGE E_IBank_Send VALUES($"payload":"Account_Debit_BSI_ID", $"payload":"IBank_Trx_ID") USING JSON_FILE="true";
+      LOAD Data_Transactional_Data TO EDGE E_Owns_Mobile_App VALUES($"payload":"Account_Debit_BSI_ID", $"payload":"Mobile_App_ID") USING JSON_FILE="true";
+      LOAD Data_Transactional_Data TO EDGE E_Use_Mobile_App VALUES($"payload":"Mobile_App_Trx_ID", $"payload":"Mobile_App_ID") USING JSON_FILE="true";
+      LOAD Data_Transactional_Data TO EDGE E_IBank_Trx_Loc VALUES($"payload":"IBank_Trx_ID", $"payload":"IBank_IP_Address") USING JSON_FILE="true";
+      LOAD Data_Transactional_Data TO EDGE E_Owns_IBank VALUES($"payload":"Account_Debit_BSI_ID", $"payload":"IBank_ID") USING JSON_FILE="true";
+      LOAD Data_Transactional_Data TO EDGE E_Use_IBank VALUES($"payload":"IBank_Trx_ID", $"payload":"IBank_ID") USING JSON_FILE="true";
+}
+
+RUN LOADING JOB kafka_dsuc
