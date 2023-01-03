@@ -7,8 +7,8 @@ CREATE TABLE ATM_Machine (
 	ATM_Operation_Time_Start VARCHAR (50),
 	ATM_Operation_Time_End VARCHAR (50),
 	ATM_Name VARCHAR (50),
-	ATM_Latitude NUMERIC,
-	ATM_Longitude NUMERIC,
+	ATM_Latitude FLOAT,
+	ATM_Longitude FLOAT,
 	ATM_City VARCHAR (50),
 	ATM_Area VARCHAR (50),
 	ATM_Address VARCHAR (200)
@@ -29,8 +29,8 @@ CREATE TABLE Mobile_Device (
 CREATE TABLE Mobile_Trx_Location (
 	Mobile_Trx_Location_ID VARCHAR(50) NOT NULL PRIMARY KEY,
 	Mobile_Device_ID VARCHAR (50) NOT NULL REFERENCES Mobile_Device (Mobile_Device_ID),
-	Mobile_GPS_Latitude NUMERIC,
-	Mobile_GPS_Longitude NUMERIC,
+	Mobile_GPS_Latitude FLOAT,
+	Mobile_GPS_Longitude FLOAT,
 	Mobile_GPS_City VARCHAR (50),
 	Mobile_GPS_Area VARCHAR (50)
 );
@@ -47,8 +47,8 @@ CREATE TABLE IBank_Trx_Location (
 	IBank_IP_Address_Range1 VARCHAR (50),
 	IBank_IP_Address_Range2 VARCHAR (50),
 	IBank_Inet_Provider VARCHAR (25),
-	IBank_Inet_Latitude NUMERIC,
-	IBank_Inet_Longitude NUMERIC
+	IBank_Inet_Latitude FLOAT,
+	IBank_Inet_Longitude FLOAT
 );
 
 
