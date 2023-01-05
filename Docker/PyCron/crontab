@@ -1,2 +1,2 @@
-#run python script every minutes
+#run python script every 5 minutes
 5 * * * * /usr/local/bin/python /app/UC9.py > /proc/1/fd/1 2>/proc/1/fd/2
