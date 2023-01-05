@@ -9,8 +9,3 @@ docker build -t pytg-cron .
 ```
 docker run -it --rm --name python-module-cron pytg-cron
 ```
-
-### Output:
-
-
-
