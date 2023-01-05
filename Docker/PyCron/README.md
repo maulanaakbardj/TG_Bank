@@ -7,5 +7,5 @@ docker build -t pytg-cron .
 ### Run Container
 
 ```
-docker run -it --rm --name python-module-cron pytg-cron
+docker run -it --rm --name pytg-cron pytg-cron
 ```
