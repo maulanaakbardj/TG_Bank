@@ -9,4 +9,4 @@ RUN /usr/bin/crontab /etc/cron.d/crontab
 COPY UC9.py UC9.py
 RUN echo $PYTHONPATH
 # run crond as main process of container
-CMD ["cron", "-f"]
+CMD ["cron", "-f"]]
