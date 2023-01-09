@@ -10,6 +10,8 @@ ib_dev=pd.read_csv("REF_IBank_Device_1_UC9.csv")
 mob_loc=pd.read_csv("Mobile_Trx_Location_1_UC9.csv")
 mob_dev=pd.read_csv("REF_Mobile_Device_1_UC9.csv")
 mob_tel=pd.read_csv("REF_Mobile_Telco_1_UC9.csv")
+cust=pd.read_csv("Customer1_UC9.csv")
+
 
 # Change Dataframe Data type according to vertex Data type
 trx['Account_Debit_BSI_ID'] = trx['Account_Debit_BSI_ID'].astype(str)
@@ -20,6 +22,7 @@ trx['ATM_Trx_Code'] = trx['ATM_Trx_Code'].astype(int)
 trx['ATM_Trx_Type'] = trx['ATM_Trx_Type'].astype(str)
 trx['ATM_Trx_Amount'] = trx['ATM_Trx_Amount'].astype(int)
 trx['ATM_Trx_Datetime'] = trx['ATM_Trx_Datetime'].astype(str)
+# trx['ATM_Trx_Datetime'] = pd.to_datetime(trx['ATM_Trx_Datetime'], format='%Y-%m-%d %H:%M:%S')
 trx['Account_Debit_BSI_ID_ATM_Receiver'] = trx['Account_Debit_BSI_ID_ATM_Receiver'].astype(str)
 trx['Mobile_App_ID'] = trx['Mobile_App_ID'].astype(str)
 trx['Mobile_Location_ID'] = trx['Mobile_Location_ID'].astype(str)
@@ -28,6 +31,7 @@ trx['Mobile_App_Trx_Code'] = trx['Mobile_App_Trx_Code'].astype(int)
 trx['Mobile_App_Trx_Type'] = trx['Mobile_App_Trx_Type'].astype(str)
 trx['Mobile_App_Trx_Amount'] = trx['Mobile_App_Trx_Amount'].astype(int)
 trx['Mobile_App_Trx_Datetime'] = trx['Mobile_App_Trx_Datetime'].astype(str)
+# trx['Mobile_App_Trx_Datetime'] = pd.to_datetime(trx['Mobile_App_Trx_Datetime'], format='%Y-%m-%d %H:%M:%S')
 trx['Account_Debit_BSI_ID_Mobile_Receiver'] = trx['Account_Debit_BSI_ID_Mobile_Receiver'].astype(str)
 trx['IBank_ID'] = trx['IBank_ID'].astype(str)
 trx['IBank_IP_Address'] = trx['IBank_IP_Address'].astype(str)
@@ -36,6 +40,7 @@ trx['IBank_Trx_Code'] = trx['IBank_Trx_Code'].astype(int)
 trx['IBank_Trx_Type'] = trx['IBank_Trx_Type'].astype(str)
 trx['IBank_Trx_Amount'] = trx['IBank_Trx_Amount'].astype(int)
 trx['IBank_Trx_Datetime'] = trx['IBank_Trx_Datetime'].astype(str)
+# trx['IBank_Trx_Datetime'] = pd.to_datetime(trx['IBank_Trx_Datetime'], format='%Y-%m-%d %H:%M:%S')
 trx['Account_Debit_BSI_ID_IBank_Receiver'] = trx['Account_Debit_BSI_ID_IBank_Receiver'].astype(str)
 
 atm['ATM_Machine_ID'] = atm['ATM_Machine_ID'].astype(str)
@@ -80,6 +85,14 @@ mob_dev['Mobile_Device_OS_Version'] = mob_dev['Mobile_Device_OS_Version'].astype
 mob_tel['Mobile_Telco_ID'] = mob_tel['Mobile_Telco_ID'].astype(str)
 mob_tel['Mobile_Telco_Name'] = mob_tel['Mobile_Telco_Name'].astype(str)
 
+cust['Account_Debit_BSI_ID'] = cust['Account_Debit_BSI_ID'].astype(str)
+cust['Customer_ID'] = cust['Customer_ID'].astype(str)
+cust['User_Name'] = cust['User_Name'].astype(str)
+cust['User_Address'] = cust['User_Address'].astype(str)
+cust['User_Gender'] = cust['User_Gender'].astype(str)
+cust['User_BirthDate'] = cust['User_BirthDate'].astype(str)
+cust['User_KTP_ID'] = cust['User_KTP_ID'].astype(str)
+
 
 conn = tg.TigerGraphConnection(host="http://192.168.100.8")
 conn.graphname = "Graph_Practice_New"
@@ -108,6 +121,8 @@ v_IBank_Trx = conn.upsertVertexDataFrame(trx, "V_IBank_Trx", "IBank_Trx_ID", att
 print(str(v_IBank_Trx) + " V_IBank_Trx Upserted")
 v_Account_Debit_BSI = conn.upsertVertexDataFrame(trx, "V_Account_Debit_BSI", "Account_Debit_BSI_ID", attributes= {"Account_ID":"Account_Debit_BSI_ID"})
 print(str(v_Account_Debit_BSI) + " V_Account_Debit_BSI Upserted")
+v_Customer = conn.upsertVertexDataFrame(cust, "V_Customer", "Customer_ID", attributes= {"Customer_ID":"Customer_ID","User_Name":"User_Name","User_Address":"User_Address","User_Gender":"User_Gender","User_BirthDate":"User_BirthDate","User_KTP_ID":"User_KTP_ID"})
+print(str(v_Customer) + " V_Customer")
 
 ## If your Dataframe has receiver account value use this
 # v_Account_Debit_BSI = conn.upsertVertexDataFrame(trx, "V_Account_Debit_BSI", "Account_Debit_BSI_ID_ATM_Receiver", attributes= {"Account_ID":"Account_Debit_BSI_ID_ATM_Receiver"})
@@ -151,3 +166,5 @@ e_Use_IBank = conn.upsertEdgeDataFrame (trx, "V_IBank_Trx", "E_Use_IBank", "V_IB
 print(str(e_Use_IBank) + " E_Use_IBank EDGES Upserted")
 e_Owns_IBank = conn.upsertEdgeDataFrame (trx, "V_Account_Debit_BSI", "E_Owns_IBank", "V_IBank_REF", from_id="Account_Debit_BSI_ID", to_id="IBank_ID", attributes={})
 print(str(e_Owns_IBank) + " E_Owns_IBank Upserted")
+e_Has_Debit_Account = conn.upsertEdgeDataFrame (cust, "V_Customer", "E_Has_Debit_Account", "V_Account_Debit_BSI", from_id="Customer_ID", to_id="Account_Debit_BSI_ID", attributes={})
+print(str(e_Has_Debit_Account) + " E_Has_Debit_Account")
