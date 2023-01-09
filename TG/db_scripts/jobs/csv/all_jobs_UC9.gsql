@@ -52,7 +52,13 @@ CREATE LOADING JOB load_job_Transactional_1_UC9_csv_1672195761640 FOR GRAPH Grap
       LOAD MyDataSource TO EDGE E_Owns_IBank VALUES($0, $17) USING SEPARATOR=",", HEADER="true", EOL="\n";
       LOAD MyDataSource TO EDGE E_Use_IBank VALUES($19, $17) USING SEPARATOR=",", HEADER="true", EOL="\n";
     }
-    
+
+CREATE LOADING JOB load_job_Customer1_UC9_csv_1673253015578 FOR GRAPH Graph_Practice_New {
+      DEFINE FILENAME MyDataSource;
+      LOAD MyDataSource TO VERTEX V_Customer VALUES($1, $2, $3, $4, $5, $6) USING SEPARATOR=",", HEADER="true", EOL="\n";
+      LOAD MyDataSource TO EDGE E_Has_Debit_Account VALUES($1, $0) USING SEPARATOR=",", HEADER="true", EOL="\n";
+    }
+
 RUN LOADING JOB load_job_REF_Mobile_Telco_1_UC9_csv_1672195768595 USING MyDataSource="/home/tigergraph/TG_Bank/TG/data/UC9/REF_Mobile_Telco_1_UC9.csv"
 RUN LOADING JOB load_job_REF_IBank_Device_1_UC9_csv_1672195783383 USING MyDataSource="/home/tigergraph/TG_Bank/TG/data/UC9/REF_IBank_Device_1_UC9.csv"
 RUN LOADING JOB load_job_Mobile_Trx_Location_1_UC9_csv_1672195796497 USING MyDataSource="/home/tigergraph/TG_Bank/TG/data/UC9/Mobile_Trx_Location_1_UC9.csv"
@@ -60,3 +66,5 @@ RUN LOADING JOB load_job_REF_Mobile_Device_1_UC9_csv_1672195776485 USING MyDataS
 RUN LOADING JOB load_job_IBank_Trx_Location_1_UC9_csv_1672195803768 USING MyDataSource="/home/tigergraph/TG_Bank/TG/data/UC9/IBank_Trx_Location_1_UC9.csv"
 RUN LOADING JOB load_job_REF_ATM_Machine_1_UC9_csv_1672197217315 USING MyDataSource="/home/tigergraph/TG_Bank/TG/data/UC9/REF_ATM_Machine_1_UC9.csv"
 RUN LOADING JOB load_job_Transactional_1_UC9_csv_1672195761640 USING MyDataSource="/home/tigergraph/TG_Bank/TG/data/UC9/Transactional_1_UC9.csv"
+RUN LOADING JOB load_job_REF_Mobile_Telco_1_UC9_csv_1672195768595 USING MyDataSource="/home/tigergraph/TG_Bank/TG/data/UC9/REF_Mobile_Telco_1_UC9.csv"
+RUN LOADING JOB load_job_Customer1_UC9_csv_1673253015578 USING MyDataSource="/home/tigergraph/TG_Bank/TG/data/UC9/Customer1_UC9.csv"
