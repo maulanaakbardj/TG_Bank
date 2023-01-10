@@ -1,5 +1,6 @@
 import pyTigerGraph as tg
 import sqlalchemy as db
+import pandas as pd
 import pymysql
 from datetime import datetime
 import pytz
@@ -8,7 +9,7 @@ conn = tg.TigerGraphConnection(host="http://172.16.11.223")
 conn.graphname = "Team_Grafana"
 
 output_uc9 = conn.runInstalledQuery("UC9_QRY2_GetVertexUC9")
-import pandas as pd
+
 df_uc9 = pd.json_normalize(output_uc9[0]['myUC9'])
 df_uc9 = df_uc9.drop(["v_id","v_type"], axis='columns')
 
