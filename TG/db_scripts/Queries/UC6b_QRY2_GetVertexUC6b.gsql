@@ -1,0 +1,5 @@
+CREATE QUERY UC6b_QRY2_GetVertexUC6b(/* Parameters here */) FOR GRAPH Graph_Practice_New { 
+  /* Write query logic here */ 
+  trx = SELECT a FROM V_Result_UC6b:a;
+  PRINT trx; 
+}

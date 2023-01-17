@@ -1,0 +1,294 @@
+CREATE QUERY UC04_QRY01_Multichannel1(INT min_nominal = 100000000,
+  INT time_period = 3600
+) FOR GRAPH Graph_Practice_New SYNTAX V2 { 
+  /* Write query logic here */ 
+   SetAccum<STRING> @time, @time1;
+  SetAccum<STRING> @anomaly_date, @category_count;
+  //MapAccum<STRING, SumAccum<INT>> @category_count; 
+  SumAccum<INT> @totalTransaction, @count_channel, @count_sender_channel, @count_sender;
+  SumAccum<STRING> @Sender_Account, @Receiver_Account, @anomaly_datetime;
+  OrAccum @isAnomaly, @sender, @receiver, @isConnected, @isReceiver, @isSender;
+  SetAccum<STRING> @senderList;
+  SetAccum<EDGE> @@network;
+  
+  ATM_Time = SELECT adb2 FROM V_Account_Debit_BSI:adb1 -(E_ATM_Send>:asd)- V_ATM_Trx:at -(E_ATM_Receive>:ar)- V_Account_Debit_BSI:adb2
+             WHERE adb2 != adb1
+             ACCUM adb2.@time += at.ATM_Trx_Datetime, adb2.@time1 += at.ATM_Trx_Datetime;
+               
+  Mobile_Time = SELECT adb2 FROM V_Account_Debit_BSI:adb1 -(E_Mobile_Send>:ms)- V_Mobile_App_Trx:mat -(E_Mobile_Receive>:mr)- V_Account_Debit_BSI:adb2
+                WHERE adb2 != adb1
+                ACCUM adb2.@time += mat.Mobile_App_Trx_Datetime, adb2.@time1 += mat.Mobile_App_Trx_Datetime;
+  
+  IBank_Time = SELECT adb2 FROM V_Account_Debit_BSI:adb1 -(E_IBank_Send>:ib)- V_IBank_Trx:it -(E_IBank_Receive>:ir)- V_Account_Debit_BSI:adb2
+               WHERE adb2 != adb1
+               ACCUM adb2.@time += it.IBank_Trx_Datetime, adb2.@time1 += it.IBank_Trx_Datetime;
+
+  Anomaly_ADB = SELECT adb FROM V_Account_Debit_BSI:adb 
+                WHERE adb.Account_ID != "" 
+                POST-ACCUM
+                   FOREACH i IN adb.@time DO
+                     FOREACH j IN adb.@time1 DO
+                       IF abs(datetime_diff(to_datetime(i), to_datetime(j))) BETWEEN 1 AND time_period THEN
+                          adb.@anomaly_date += j,
+                          adb.@isAnomaly += TRUE
+                       END
+                     END
+                   END,
+                adb.@count_sender += COUNT(adb.@senderList)
+                HAVING adb.@isAnomaly == TRUE;
+  
+  Trx_ATM = SELECT at FROM V_Account_Debit_BSI:adb -(E_ATM_Send>:asd)- V_ATM_Trx:at -(E_ATM_Receive>:ar)- Anomaly_ADB:aadb 
+            WHERE aadb.@anomaly_date.contains(at.ATM_Trx_Datetime)
+            ACCUM adb.@sender += TRUE, adb.@category_count += "ATM";
+  
+  Trx_Mobile = SELECT mat FROM V_Account_Debit_BSI:adb -(E_Mobile_Send>:ms)- V_Mobile_App_Trx:mat -(E_Mobile_Receive>:mr)- Anomaly_ADB:aadb 
+               WHERE aadb.@anomaly_date.contains(mat.Mobile_App_Trx_Datetime)
+               ACCUM adb.@sender += TRUE, adb.@category_count += "Mobile Application";
+  
+  Trx_IBank = SELECT it FROM V_Account_Debit_BSI:adb -(E_IBank_Send>:isd)- V_IBank_Trx:it -(E_IBank_Receive>:ir)- Anomaly_ADB:aadb 
+              WHERE aadb.@anomaly_date.contains(it.IBank_Trx_Datetime)
+              ACCUM adb.@sender += TRUE, adb.@category_count += "Internet Banking";
+    
+  Sender = SELECT adb FROM V_Account_Debit_BSI:adb 
+           WHERE adb.@sender == TRUE
+           ACCUM adb.@count_sender_channel += COUNT(adb.@category_count)
+           HAVING adb.@count_sender_channel > 1;
+  
+  Trx_ATM1 = SELECT at FROM Sender:s -(E_ATM_Send>:asd)- Trx_ATM:at -(E_ATM_Receive>:ar)- Anomaly_ADB:aadb 
+             ACCUM s.@isConnected += TRUE, 
+                   aadb.@receiver += TRUE, aadb.@category_count += "ATM",
+                   aadb.@totalTransaction += at.ATM_Trx_Amount,
+                   aadb.@senderList += s.Account_ID;
+  
+  Trx_Mobile1 = SELECT mat FROM Sender:s -(E_Mobile_Send>:ms)- Trx_Mobile:mat -(E_Mobile_Receive>:mr)- Anomaly_ADB:aadb 
+                ACCUM s.@isConnected += TRUE, 
+                      aadb.@receiver += TRUE, aadb.@category_count += "Mobile Application",
+                      aadb.@totalTransaction += mat.Mobile_App_Trx_Amount,
+                      aadb.@senderList += s.Account_ID;
+  
+  Trx_IBank1 = SELECT it FROM Sender:s -(E_IBank_Send>:isd)- Trx_IBank:it -(E_IBank_Receive>:ir)- Anomaly_ADB:aadb 
+               ACCUM s.@isConnected += TRUE, 
+                     aadb.@receiver += TRUE, aadb.@category_count += "Internet Banking",
+                     aadb.@totalTransaction += it.IBank_Trx_Amount,
+                     aadb.@senderList += s.Account_ID;
+   
+  Receiver = SELECT aadb FROM Anomaly_ADB:aadb
+             WHERE aadb.@receiver == TRUE 
+                  AND aadb.@totalTransaction > min_nominal 
+             ACCUM aadb.@count_channel += COUNT(aadb.@category_count), 
+                   aadb.@count_sender += COUNT(aadb.@senderList)
+             HAVING aadb.@count_sender > 1 
+                    AND aadb.@count_channel > 1;
+  
+  Anomaly_Sender1 = SELECT s FROM Sender:s 
+                   WHERE s.@isConnected == TRUE;
+  
+  Trx_ATM2 = SELECT at FROM Anomaly_Sender1:s -(E_ATM_Send>:asd)- Trx_ATM1:at -(E_ATM_Receive>:ar)- Receiver:r
+             ACCUM @@network += ar, @@network += asd, 
+                   s.@isSender += TRUE, r.@isReceiver += TRUE,
+                   r.@Sender_Account += s.Account_ID, at.@Receiver_Account += r.Account_ID,
+                   INSERT INTO UC04_Results (PRIMARY_ID, Account_Receiver, ATM_Trx_ID, ATM_Trx_Datetime, ATM_Trx_Amount) VALUES (s.Account_ID, r.Account_ID, at.ATM_Trx_ID, at.ATM_Trx_Datetime, at.ATM_Trx_Amount);
+  
+  Trx_Mobile2 = SELECT mat FROM Anomaly_Sender1:s -(E_Mobile_Send>:ms)- Trx_Mobile1:mat -(E_Mobile_Receive>:mr)- Receiver:r 
+                ACCUM @@network += mr, @@network += ms, 
+                      s.@isSender += TRUE, r.@isReceiver += TRUE,
+                      mat.@Sender_Account += s.Account_ID, mat.@Receiver_Account += r.Account_ID,
+                      INSERT INTO UC04_Results (PRIMARY_ID, Account_Receiver, Mobile_Trx_ID, Mobile_Trx_Datetime, Mobile_Trx_Amount) VALUES (s.Account_ID, r.Account_ID, mat.Mobile_App_Trx_ID, mat.Mobile_App_Trx_Datetime, mat.Mobile_App_Trx_Amount);
+  
+  Trx_IBank2 = SELECT it FROM Anomaly_Sender1:s -(E_IBank_Send>:isd)- Trx_IBank1:it -(E_IBank_Receive>:ir)- Receiver:r 
+               ACCUM @@network += ir, @@network += isd, 
+                     s.@isSender += TRUE, r.@isReceiver += TRUE,
+                     it.@Sender_Account += s.Account_ID, it.@Receiver_Account += r.Account_ID,
+                     INSERT INTO UC04_Results (PRIMARY_ID, Account_Receiver, IBank_Trx_ID, IBank_Trx_Datetime, IBank_Trx_Amount) VALUES (s.Account_ID, r.Account_ID, it.IBank_Trx_ID, it.IBank_Trx_Datetime, it.IBank_Trx_Amount);
+  
+  Anomaly_Sender = SELECT s FROM Anomaly_Sender1:s 
+                   WHERE s.@isSender == TRUE;
+  
+  Anomaly_Receiver = SELECT r FROM Receiver:r 
+                     WHERE r.@isReceiver == TRUE
+                     ACCUM r.@anomaly_datetime += datetime_format(datetime_add(NOW(), INTERVAL 7 HOUR), "%Y-%m-%d %H:%M")
+                     POST-ACCUM 
+                     FOREACH item IN r.@senderList DO
+                       INSERT INTO UC04_Results (PRIMARY_ID, Total_Transaction, Anomaly_Datetime, Use_Case) VALUES (item, r.@totalTransaction, r.@anomaly_datetime, "UC04")
+                     END;
+  
+  ////////////////////////////////////////  Non BSI as Receiver  ////////////////////////////////////////////
+  ANB_ATM_Time = SELECT anb FROM V_Account_Debit_BSI:adb -(E_ATM_Send>:asd)- V_ATM_Trx:at -(E_ATM_Receive_AccountNonBSI>:ar)- V_Account_NonBSI:anb
+                 ACCUM anb.@time += at.ATM_Trx_Datetime, anb.@time1 += at.ATM_Trx_Datetime;
+                
+  ANB_Mobile_Time = SELECT anb FROM V_Account_Debit_BSI:adb -(E_Mobile_Send>:ms)- V_Mobile_App_Trx:mat -(E_Mobile_App_Receive_AccountNonBSI>:mr)- V_Account_NonBSI:anb
+                    ACCUM anb.@time += mat.Mobile_App_Trx_Datetime, anb.@time1 += mat.Mobile_App_Trx_Datetime;
+  
+  ANB_IBank_Time = SELECT anb FROM V_Account_Debit_BSI:adb -(E_IBank_Send>:ib)- V_IBank_Trx:it -(E_IBank_Receive_AccountNonBSI>:ir)- V_Account_NonBSI:anb
+                   ACCUM anb.@time += it.IBank_Trx_Datetime, anb.@time1 += it.IBank_Trx_Datetime;
+  
+  Anomaly_ANB = SELECT anb FROM V_Account_NonBSI:anb 
+                WHERE anb.NonBSI_Account_ID != "" 
+                POST-ACCUM
+                   FOREACH i IN anb.@time DO
+                     FOREACH j IN anb.@time1 DO
+                       IF abs(datetime_diff(to_datetime(i), to_datetime(j))) BETWEEN 1 AND time_period THEN
+                          anb.@anomaly_date += j,
+                          anb.@isAnomaly += TRUE
+                       END
+                     END
+                   END,
+                anb.@count_sender += COUNT(anb.@senderList)
+                HAVING anb.@isAnomaly == TRUE;
+  
+  ANB_Trx_ATM = SELECT at FROM  V_Account_Debit_BSI:adb -(E_ATM_Send>:asd)- V_ATM_Trx:at -(E_ATM_Receive_AccountNonBSI>:ar)- Anomaly_ANB:aanb 
+                WHERE aanb.@anomaly_date.contains(at.ATM_Trx_Datetime)
+                ACCUM adb.@sender += TRUE, adb.@category_count += "ATM";
+  
+  ANB_Trx_Mobile  = SELECT mat FROM V_Account_Debit_BSI:adb -(E_Mobile_Send>:ms)- V_Mobile_App_Trx:mat -(E_Mobile_App_Receive_AccountNonBSI>:mr)- Anomaly_ANB:aanb 
+                    WHERE aanb.@anomaly_date.contains(mat.Mobile_App_Trx_Datetime)
+                    ACCUM adb.@sender += TRUE, adb.@category_count += "Mobile Application";
+  
+  ANB_Trx_IBank = SELECT it FROM V_Account_Debit_BSI:adb -(E_IBank_Send>:ib)- V_IBank_Trx:it -(E_IBank_Receive_AccountNonBSI>:ir)- Anomaly_ANB:aanb 
+                  WHERE aanb.@anomaly_date.contains(it.IBank_Trx_Datetime)
+                  ACCUM adb.@sender += TRUE, adb.@category_count += "Internet Banking";
+  
+  ANB_Sender = SELECT adb FROM V_Account_Debit_BSI:adb 
+               WHERE adb.@sender == TRUE
+               ACCUM adb.@count_sender_channel += COUNT(adb.@category_count)
+               HAVING adb.@count_sender_channel > 1;
+  
+  ANB_Trx_ATM1 = SELECT at FROM ANB_Sender:anbs -(E_ATM_Send>:asd)- ANB_Trx_ATM:at -(E_ATM_Receive_AccountNonBSI>:ar)- Anomaly_ANB:aanb 
+                 ACCUM anbs.@isConnected += TRUE, 
+                       aanb.@receiver += TRUE, aanb.@category_count += "ATM",
+                       aanb.@totalTransaction += at.ATM_Trx_Amount,
+                       aanb.@senderList += anbs.Account_ID;
+  
+  ANB_Trx_Mobile1 = SELECT mat FROM ANB_Sender:anbs -(E_Mobile_Send>:ms)- ANB_Trx_Mobile:mat -(E_Mobile_App_Receive_AccountNonBSI>:mr)- Anomaly_ANB:aanb 
+                    ACCUM anbs.@isConnected += TRUE, 
+                          aanb.@receiver += TRUE, aanb.@category_count += "Mobile Application",
+                          aanb.@totalTransaction += mat.Mobile_App_Trx_Amount,
+                          aanb.@senderList += anbs.Account_ID;
+  
+  ANB_Trx_IBank1 = SELECT it FROM ANB_Sender:anbs -(E_IBank_Send>:isd)- ANB_Trx_IBank:it -(E_IBank_Receive_AccountNonBSI>:ir)- Anomaly_ANB:aanb 
+                   ACCUM anbs.@isConnected += TRUE, 
+                         aanb.@receiver += TRUE, aanb.@category_count += "Internet Banking",
+                         aanb.@totalTransaction += it.IBank_Trx_Amount,
+                         aanb.@senderList += anbs.Account_ID;
+  
+  ANB_Receiver = SELECT aanb FROM Anomaly_ANB:aanb
+                 WHERE aanb.@receiver == TRUE AND aanb.@totalTransaction > min_nominal 
+                 ACCUM aanb.@count_channel += COUNT(aanb.@category_count), 
+                       aanb.@count_sender += COUNT(aanb.@senderList)
+                 HAVING aanb.@count_sender > 1 
+                        AND aanb.@count_channel > 1;
+  
+  ANB_Anomaly_Sender1 = SELECT anbs FROM ANB_Sender:anbs
+                        WHERE anbs.@isConnected == TRUE;
+  
+  ANB_Trx_ATM2 = SELECT at FROM ANB_Anomaly_Sender1:anbs1 -(E_ATM_Send>:asd)- ANB_Trx_ATM1:at -(E_ATM_Receive_AccountNonBSI>:ar)- ANB_Receiver:anbr 
+                 ACCUM @@network += ar, @@network += asd, 
+                       anbs1.@isSender += TRUE, anbr.@isReceiver += TRUE,
+                       at.@Sender_Account += anbs1.Account_ID, at.@Receiver_Account += anbr.NonBSI_Account_ID,
+                       INSERT INTO UC04_Results (PRIMARY_ID, Account_Receiver, ATM_Trx_ID, ATM_Trx_Datetime, ATM_Trx_Amount) VALUES (anbs1.Account_ID, anbr.NonBSI_Account_ID, at.ATM_Trx_ID, at.ATM_Trx_Datetime, at.ATM_Trx_Amount);
+  
+  ANB_Trx_Mobile2 = SELECT mat FROM ANB_Anomaly_Sender1:anbs1 -(E_Mobile_Send>:ms)- ANB_Trx_Mobile1:mat -(E_Mobile_App_Receive_AccountNonBSI>:mr)- ANB_Receiver:anbr 
+                    ACCUM @@network += mr, @@network += ms, 
+                          anbs1.@isSender += TRUE, anbr.@isReceiver += TRUE,
+                          mat.@Sender_Account += anbs1.Account_ID, mat.@Receiver_Account += anbr.NonBSI_Account_ID,
+                          INSERT INTO UC04_Results (PRIMARY_ID, Account_Receiver, Mobile_Trx_ID, Mobile_Trx_Datetime, Mobile_Trx_Amount) VALUES (anbs1.Account_ID, anbr.NonBSI_Account_ID, mat.Mobile_App_Trx_ID, mat.Mobile_App_Trx_Datetime, mat.Mobile_App_Trx_Amount);
+  
+  ANB_Trx_IBank2 = SELECT it FROM ANB_Anomaly_Sender1:anbs1 -(E_IBank_Send>:isd)- ANB_Trx_IBank1:it -(E_IBank_Receive_AccountNonBSI>:ir)- ANB_Receiver:anbr 
+                   ACCUM @@network += ir, @@network += isd, 
+                         anbs1.@isSender += TRUE, anbr.@isReceiver += TRUE,
+                         it.@Sender_Account += anbs1.Account_ID, it.@Receiver_Account += anbr.NonBSI_Account_ID,
+                         INSERT INTO UC04_Results (PRIMARY_ID, Account_Receiver, IBank_Trx_ID, IBank_Trx_Datetime, IBank_Trx_Amount) VALUES (anbs1.Account_ID, anbr.NonBSI_Account_ID, it.IBank_Trx_ID, it.IBank_Trx_Datetime, it.IBank_Trx_Amount);
+    
+  ANB_Anomaly_Sender = SELECT anbs1 FROM ANB_Anomaly_Sender1:anbs1 
+                       WHERE anbs1.@isSender == TRUE;
+  
+  ANB_Anomaly_Receiver = SELECT anbr FROM ANB_Receiver:anbr 
+                         WHERE anbr.@isReceiver == TRUE
+                         ACCUM anbr.@anomaly_datetime += datetime_format(datetime_add(NOW(), INTERVAL 7 HOUR), "%Y-%m-%d %H:%M")
+                         POST-ACCUM 
+                         FOREACH i IN anbr.@senderList DO
+                           INSERT INTO UC04_Results (PRIMARY_ID, Total_Transaction, Anomaly_Datetime, Use_Case) VALUES (i, anbr.@totalTransaction, anbr.@anomaly_datetime, "UC04")
+                         END;
+  
+  PRINT Anomaly_Sender [
+      Anomaly_Sender.Account_ID as Account_ID,
+      Anomaly_Sender.@category_count as Category_Count
+  ];
+  PRINT Anomaly_Receiver [
+      Anomaly_Receiver.Account_ID as Account_ID,
+      Anomaly_Receiver.@anomaly_date as Anomaly_Date,
+      Anomaly_Receiver.@senderList as Sender_List,
+      Anomaly_Receiver.@category_count as Category_Count,
+      Anomaly_Receiver.@totalTransaction as Total_Transaction,
+      Anomaly_Receiver.@isReceiver
+  ];
+  PRINT Trx_ATM2 [
+      Trx_ATM2.ATM_Trx_ID as Trx_ID,
+      Trx_ATM2.@Sender_Account as Sender_Account,
+      Trx_ATM2.@Receiver_Account as Receiver_Account,
+      Trx_ATM2.ATM_Trx_Datetime as Trx_Datetime,
+      Trx_ATM2.ATM_Trx_Amount as Trx_Amount,
+      Trx_ATM2.ATM_Trx_Code as Trx_Code,
+      Trx_ATM2.ATM_Trx_Type as Trx_Type
+  ];
+  PRINT Trx_Mobile2 [
+      Trx_Mobile2.Mobile_App_Trx_ID as Trx_ID,
+      Trx_Mobile2.@Sender_Account as Sender_Account,
+      Trx_Mobile2.@Receiver_Account as Receiver_Account,
+      Trx_Mobile2.Mobile_App_Trx_Datetime as Trx_Datetime,
+      Trx_Mobile2.Mobile_App_Trx_Amount as Trx_Amount,
+      Trx_Mobile2.Mobile_App_Trx_Code as Trx_Code,
+      Trx_Mobile2.Mobile_App_Trx_Type as Trx_Type
+  ];
+  PRINT Trx_IBank2 [
+      Trx_IBank2.IBank_Trx_ID as Trx_ID,
+      Trx_IBank2.@Sender_Account as Sender_Account,
+      Trx_IBank2.@Receiver_Account as Receiver_Account,
+      Trx_IBank2.IBank_Trx_Datetime as Trx_Datetime,
+      Trx_IBank2.IBank_Trx_Amount as Trx_Amount,
+      Trx_IBank2.IBank_Trx_Code as Trx_Code,
+      Trx_IBank2.IBank_Trx_Type as Trx_Type
+  ];
+
+  PRINT ANB_Anomaly_Sender [
+      ANB_Anomaly_Sender.Account_ID as Account_ID,
+      ANB_Anomaly_Sender.@category_count as Category_Count
+  ];
+  PRINT ANB_Anomaly_Receiver [
+      ANB_Anomaly_Receiver.NonBSI_Account_ID as Account_ID,
+      ANB_Anomaly_Receiver.@anomaly_date as Anomaly_Date,
+      ANB_Anomaly_Receiver.@senderList as Sender_List,
+      ANB_Anomaly_Receiver.@category_count as Category_Count,
+      ANB_Anomaly_Receiver.@totalTransaction as Total_Transaction,
+      ANB_Anomaly_Receiver.@isReceiver
+  ];
+  PRINT ANB_Trx_ATM2 [
+      ANB_Trx_ATM2.ATM_Trx_ID as Trx_ID,
+      ANB_Trx_ATM2.@Sender_Account as Sender_Account,
+      ANB_Trx_ATM2.@Receiver_Account as Receiver_Account,
+      ANB_Trx_ATM2.ATM_Trx_Datetime as Trx_Datetime,
+      ANB_Trx_ATM2.ATM_Trx_Amount as Trx_Amount,
+      ANB_Trx_ATM2.ATM_Trx_Code as Trx_Code,
+      ANB_Trx_ATM2.ATM_Trx_Type as Trx_Type
+  ];
+  PRINT ANB_Trx_Mobile2 [
+      ANB_Trx_Mobile2.Mobile_App_Trx_ID as Trx_ID,
+      ANB_Trx_Mobile2.@Sender_Account as Sender_Account,
+      ANB_Trx_Mobile2.@Receiver_Account as Receiver_Account,
+      ANB_Trx_Mobile2.Mobile_App_Trx_Datetime as Trx_Datetime,
+      ANB_Trx_Mobile2.Mobile_App_Trx_Amount as Trx_Amount,
+      ANB_Trx_Mobile2.Mobile_App_Trx_Code as Trx_Code,
+      ANB_Trx_Mobile2.Mobile_App_Trx_Type as Trx_Type
+  ];
+  PRINT ANB_Trx_IBank2 [
+      ANB_Trx_IBank2.IBank_Trx_ID as Trx_ID,
+      ANB_Trx_IBank2.@Sender_Account as Sender_Account,
+      ANB_Trx_IBank2.@Receiver_Account as Receiver_Account,
+      ANB_Trx_IBank2.IBank_Trx_Datetime as Trx_Datetime,
+      ANB_Trx_IBank2.IBank_Trx_Amount as Trx_Amount,
+      ANB_Trx_IBank2.IBank_Trx_Code as Trx_Code,
+      ANB_Trx_IBank2.IBank_Trx_Type as Trx_Type
+  ];
+  PRINT @@network;
+  PRINT datetime_format(datetime_add(NOW(), INTERVAL 7 HOUR), "%Y-%m-%d %H:%M:%S") as Execution_End_Time; 
+}

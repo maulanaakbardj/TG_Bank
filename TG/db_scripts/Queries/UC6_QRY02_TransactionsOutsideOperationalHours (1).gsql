@@ -1,0 +1,39 @@
+CREATE QUERY UC6_QRY02_TransactionsOutsideOperationalHours(/* Parameters here */) 
+FOR GRAPH Graph_Practice_New SYNTAX V2{ 
+  SetAccum<EDGE> @@network;
+
+
+  trx = SELECT e FROM V_Customer:a- (E_Has_Credit_Account:b)- V_Account_Credit_BSI:c- (E_Credit_Send>:d)- V_Credit_Card_Trx:e- (E_Has_EDC_Device>:f)- V_EDC_Device:g 
+  WHERE 
+    day(to_datetime(e.Credit_Card_Trx_Datetime)) == day(datetime_sub(datetime_sub(now(), INTERVAL -7 hour), INTERVAL 1 day))
+// AND datetime_to_epoch(to_datetime(e.Credit_Card_Trx_Datetime)) < datetime_to_epoch(to_datetime(datetime_format(datetime_sub(datetime_sub(now(), INTERVAL -1 hour), INTERVAL 2 day), "%Y-%m-%d")+" "+ g.EDC_Operation_Time_Start))
+ //OR datetime_to_epoch(to_datetime(e.Credit_Card_Trx_Datetime)) > datetime_to_epoch(to_datetime(datetime_format(datetime_sub(datetime_sub(now(), INTERVAL -1 hour), INTERVAL 2day), "%Y-%m-%d")+" "+ g.EDC_Operation_Time_End))
+  ;
+    
+  trx2 = SELECT e FROM V_Customer:a- (E_Has_Credit_Account:b)- V_Account_Credit_BSI:c- (E_Credit_Send>:d)- trx:e- (E_Has_EDC_Device>:f)- V_EDC_Device:g 
+  WHERE 
+  datetime_to_epoch(to_datetime(e.Credit_Card_Trx_Datetime)) < datetime_to_epoch(to_datetime(datetime_format(datetime_sub(datetime_sub(now(), INTERVAL -1 hour), INTERVAL 1 day), "%Y-%m-%d")+" "+ g.EDC_Operation_Time_Start))
+  OR datetime_to_epoch(to_datetime(e.Credit_Card_Trx_Datetime)) > datetime_to_epoch(to_datetime(datetime_format(datetime_sub(datetime_sub(now(), INTERVAL -1 hour), INTERVAL 1 day), "%Y-%m-%d")+" "+ g.EDC_Operation_Time_End))
+  ACCUM @@network+=b, @@network+=d, @@network+=f; 
+
+  Network = SELECT e FROM V_Customer:a- (E_Has_Credit_Account:b)- V_Account_Credit_BSI:c- (E_Credit_Send>:d)- trx2:e- (E_Has_EDC_Device>:f)- V_EDC_Device:g 
+ 
+  ACCUM
+  INSERT INTO
+    V_Result_UC6b (PRIMARY_ID,  Credit_Card_Trx_Code, Credit_Card_Trx_Type, Credit_Card_Trx_Amount, 
+                   Account_Credit_Card_ID, Credit_Card_Trx_Datetime,
+                   EDC_Name, EDC_City, EDC_Address, Operation_Time_Start, Operation_Time_End,
+                   User_Name, User_Address, User_Gender, User_BirthDate, User_KTP_ID)
+    VALUES ( e.Credit_Card_Trx_ID, e.Credit_Card_Trx_Code, e.Credit_Card_Trx_Type, e.Credit_Card_Trx_Amount,
+                  c.Account_Credit_Card_ID, e.Credit_Card_Trx_Datetime,
+                   g.EDC_Name, g.EDC_City, g.EDC_Address, g.EDC_Operation_Time_Start, g.EDC_Operation_Time_End,
+                   a.User_Name, a.User_Address, a.User_Gender, a.User_BirthDate, a.User_KTP_ID)
+    ;
+
+  
+//  PRINT trx; 
+  print trx2;
+ // PRINT trx_network;
+ // PRINT Network;
+  PRINT @@network;
+    }

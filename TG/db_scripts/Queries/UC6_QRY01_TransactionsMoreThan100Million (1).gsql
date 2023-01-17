@@ -1,0 +1,41 @@
+CREATE QUERY UC6_QRY01_TransactionsMoreThan100Million(INT Amount = 100000000) 
+  FOR GRAPH Graph_Practice_New SYNTAX V2 {
+  SumAccum<INT> @Amount, @count;
+  SetAccum<EDGE> @@network;
+  MaxAccum<STRING>@EDC_Name,@EDC_Addres,@Account;
+  
+  trx = SELECT c FROM V_Customer:a- (E_Has_Credit_Account:b)- V_Account_Credit_BSI:c- (E_Credit_Send>:d)- V_Credit_Card_Trx:e- (E_Has_EDC_Device>:f)- V_EDC_Device:g
+  WHERE day(to_datetime(e.Credit_Card_Trx_Datetime)) == day(datetime_sub(datetime_sub(now(), INTERVAL -7 hour), INTERVAL 1 day))
+  ACCUM
+  c.@Amount+=(e.Credit_Card_Trx_Amount),
+  c.@count+=1,
+  c.@EDC_Name+=(g.EDC_Name),
+  c.@EDC_Addres+=(g.EDC_Address)
+  HAVING
+  c.@Amount>=Amount;
+  
+
+  
+  Network = SELECT e FROM V_Customer:a- (E_Has_Credit_Account:b)- trx:c- (E_Credit_Send>:d)- V_Credit_Card_Trx:e- (E_Has_EDC_Device>:f)- V_EDC_Device:g
+  ACCUM
+  e.@Account+=(c.Account_Credit_Card_ID),
+  e.@Amount += c.@Amount,
+  @@network+=b, @@network+=d, @@network+=f;
+    
+  Network = SELECT e FROM V_Customer:a- (E_Has_Credit_Account:b)- trx:c- (E_Credit_Send>:d)- V_Credit_Card_Trx:e- (E_Has_EDC_Device>:f)- V_EDC_Device:g
+  ACCUM
+  INSERT INTO
+    V_Result_UC6a (PRIMARY_ID,  Credit_Card_Trx_Code, Credit_Card_Trx_Type, Credit_Card_Trx_Amount, Amount,
+                   Account_Credit_Card_ID, Credit_Card_Trx_Datetime,
+                   EDC_Name, EDC_City, EDC_Address,
+                   User_Name, User_Address, User_Gender, User_BirthDate, User_KTP_ID)
+    VALUES ( e.Credit_Card_Trx_ID, e.Credit_Card_Trx_Code, e.Credit_Card_Trx_Type, e.Credit_Card_Trx_Amount, e.@Amount,
+                  c.Account_Credit_Card_ID, e.Credit_Card_Trx_Datetime,
+                   g.EDC_Name, g.EDC_City, g.EDC_Address,
+                   a.User_Name, a.User_Address, a.User_Gender, a.User_BirthDate, a.User_KTP_ID)
+    ;
+    
+  PRINT trx; 
+  PRINT Network;
+  PRINT @@network;
+}

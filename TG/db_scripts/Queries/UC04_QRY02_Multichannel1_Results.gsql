@@ -1,0 +1,5 @@
+CREATE QUERY UC04_QRY02_Multichannel1_Results(/* Parameters here */) FOR GRAPH Graph_Practice_New { 
+  /* Write query logic here */ 
+  Results = SELECT r FROM UC04_Results:r;
+  PRINT Results;
+}

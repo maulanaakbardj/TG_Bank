@@ -1,0 +1,27 @@
+CREATE QUERY UC04_QRY03_Multichannel1_Customer(/* Parameters here */) FOR GRAPH Graph_Practice_New {
+
+  SetAccum<STRING> @@acc;
+  SumAccum<STRING> @Account_ID;
+
+  Res = SELECT r FROM UC04_Results:r
+        ACCUM @@acc += r.Account_Receiver, @@acc += r.Account_Sender;
+
+ 
+
+  Details = SELECT c FROM V_Account_Debit_BSI:adb -(E_Has_Debit_Account:hda)- V_Customer:c
+            WHERE adb.Account_ID IN @@acc
+            ACCUM c.@Account_ID += adb.Account_ID;
+
+ 
+
+  PRINT Details [
+    Details.@Account_ID AS Account_ID,
+    Details.Customer_ID AS Customer_ID,
+    Details.User_KTP_ID AS KTP_ID,
+    Details.User_Name AS Full_Name,
+    Details.User_BirthDate AS Date_of_Birth,
+    Details.User_Gender AS Gender,
+    Details.User_Address AS Email_Address
+  ];
+
+}

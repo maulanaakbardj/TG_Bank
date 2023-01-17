@@ -1,0 +1,5 @@
+CREATE QUERY UC9_QRY2_GetVertexUC9(/* Parameters here */) FOR GRAPH Graph_Practice_New { 
+  /* Write query logic here */ 
+  myUC9 = SELECT s FROM V_Suspect_UC9:s;
+  PRINT myUC9; 
+}
