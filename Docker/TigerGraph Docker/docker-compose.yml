@@ -1,0 +1,44 @@
+version: '3'
+
+services:
+
+  tg:
+    image: "xpertmind/tigergraph:latest"
+    container_name: tg_test
+    restart: unless-stopped
+    ports:
+      - '9000:9000'
+      - '14240:14240'
+    ulimits:
+      nofile:
+        soft: 1000000
+        hard: 1000000
+    volumes:
+      - ./graph-data:/home/tigergraph/graph-data
+    stdin_open: true
+    tty: true
+
+    healthcheck:
+            test: curl --fail http://localhost:9000/echo
+            interval: 5s
+            timeout: 10s
+            retries: 5
+            
+  mariadb:
+    image: mariadb:10
+    hostname: mariadb
+    container_name: mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: dsuc
+    ports:
+      - 3306:3306
+    command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci 
+
+networks:
+    tg_net:
+        driver: bridge
+        ipam:
+            driver: default
+            config:
+            - subnet: 10.16.33.0/28

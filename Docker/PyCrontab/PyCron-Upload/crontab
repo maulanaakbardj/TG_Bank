@@ -1,0 +1,2 @@
+#run python script every minutes
+*/2 * * * * /usr/local/bin/python /app/DataUploading_All_UC.py > /proc/1/fd/1 2>/proc/1/fd/2
