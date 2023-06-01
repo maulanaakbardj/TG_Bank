@@ -1,4 +1,4 @@
-# TigerGraph Dashboard Using Grafana
+# TigerGraph Dashboard Using Grafana #
 ![image](https://user-images.githubusercontent.com/67249292/212904158-6b5e82bb-3e81-41bc-bb15-e71e86dd5f27.png)
 
 ## [Tigergraph](https://www.tigergraph.com/)
